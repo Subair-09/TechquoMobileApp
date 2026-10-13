@@ -14,7 +14,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: process.env.VITE_BACKEND_TARGET || 'https://techquo-mobile-app.vercel.app',
         changeOrigin: true,
         secure: false,
       },
