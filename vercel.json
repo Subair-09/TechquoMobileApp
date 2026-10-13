@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "npm --prefix backend run build",
   "outputDirectory": ".",
   "functions": {
     "api/index.js": {
