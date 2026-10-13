@@ -9,13 +9,13 @@ export const initializeAdmin = async (): Promise<void> => {
   const { NAME, EMAIL, PASSWORD } = ENV.INITIAL_ADMIN;
 
   if (!EMAIL || !PASSWORD) {
-    console.error('[Setup Error] INITIAL_ADMIN_EMAIL and INITIAL_ADMIN_PASSWORD must be configured.');
-    process.exit(1);
+    console.warn('[Setup Error] INITIAL_ADMIN_EMAIL and INITIAL_ADMIN_PASSWORD must be configured.');
+    return;
   }
 
   if (PASSWORD.length < 8) {
-    console.error('[Setup Error] Initial admin password must be at least 8 characters.');
-    process.exit(1);
+    console.warn('[Setup Error] Initial admin password must be at least 8 characters.');
+    return;
   }
 
   await connectDB();
