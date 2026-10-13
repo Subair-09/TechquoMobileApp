@@ -45,7 +45,7 @@ let activeApiBaseUrl: string = '';
 export const getBaseUrl = (): string => {
   if (activeApiBaseUrl) return activeApiBaseUrl;
 
-  const envUrl = process.env.EXPO_PUBLIC_API_URL;
+  const envUrl = process.env.EXPO_PUBLIC_API_URL || 'https://techquo-mobile-app.vercel.app/api';
   const isWeb = Platform.OS === 'web';
 
   if (envUrl) {
@@ -61,13 +61,7 @@ export const getBaseUrl = (): string => {
     return envUrl;
   }
 
-  if (isWeb) {
-    activeApiBaseUrl = 'http://localhost:5000/api';
-    return activeApiBaseUrl;
-  }
-
-  const devIp = getDevHostIp();
-  activeApiBaseUrl = `http://${devIp}:5000/api`;
+  activeApiBaseUrl = 'https://techquo-mobile-app.vercel.app/api';
   return activeApiBaseUrl;
 };
 
