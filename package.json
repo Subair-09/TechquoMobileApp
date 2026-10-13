@@ -43,7 +43,8 @@
     "backend:build": "npm --prefix backend run build",
     "backend:test": "npm --prefix backend run test",
     "backend:init-admin": "npm --prefix backend run init-admin",
-    "backend:seed": "npm --prefix backend run seed"
+    "backend:seed": "npm --prefix backend run seed",
+    "vercel-build": "npm --prefix backend run build"
   },
   "private": true
 }

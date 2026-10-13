@@ -174,3 +174,9 @@ export const createApp = () => {
 
   return app;
 };
+
+// Instantiate and export default app for Vercel Serverless runtime
+const app = createApp();
+(app as any).default = app;
+
+export default app;

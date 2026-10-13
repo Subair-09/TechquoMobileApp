@@ -39,5 +39,5 @@ if (!process.env.VERCEL && ENV.NODE_ENV !== 'test') {
     process.exit(1);
   });
 }
-
+(app as any).default = app;
 export default app;
