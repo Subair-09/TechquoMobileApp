@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { ENV } from '../config/env.js';
-import { AdminUser, IAdminUser } from '../models/AdminUser.js';
+import { AdminUser } from '../models/AdminUser.js';
+import { User } from '../models/User.js';
 
 export interface AuthenticatedRequest extends Request {
-  user?: IAdminUser;
+  user?: any;
 }
 
 export const authenticate = async (
@@ -27,7 +28,10 @@ export const authenticate = async (
     }
 
     const decoded = jwt.verify(token, ENV.JWT_SECRET) as { id: string; email: string };
-    const user = await AdminUser.findById(decoded.id);
+    let user: any = await AdminUser.findById(decoded.id);
+    if (!user) {
+      user = await User.findById(decoded.id);
+    }
 
     if (!user || !user.isActive) {
       res.status(401).json({ success: false, message: 'Invalid token or inactive account.' });

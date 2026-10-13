@@ -545,6 +545,106 @@ class TechQuoApiService {
       n.read = true;
     });
   }
+
+  async registerReader(payload: { name: string; email: string; password: string }): Promise<{ token: string; user: User }> {
+    const url = `${getBaseUrl()}/auth/register`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok || !data?.success) {
+      throw new Error(data?.message || 'Registration failed. Please try again.');
+    }
+
+    return {
+      token: data.token,
+      user: {
+        id: data.user.id || data.user._id,
+        name: data.user.name,
+        username: data.user.username || data.user.email.split('@')[0],
+        email: data.user.email,
+        avatar: data.user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+        isPremium: !!data.user.isPremium,
+        preferences: data.user.preferences || {
+          notificationsEnabled: true,
+          fontSize: 'md',
+          offlineReading: true,
+          hapticsEnabled: true,
+        },
+      },
+    };
+  }
+
+  async loginReader(payload: { email: string; password: string }): Promise<{ token: string; user: User }> {
+    const url = `${getBaseUrl()}/auth/login`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok || !data?.success) {
+      throw new Error(data?.message || 'Invalid email or password.');
+    }
+
+    return {
+      token: data.token,
+      user: {
+        id: data.user.id || data.user._id,
+        name: data.user.name,
+        username: data.user.username || data.user.email.split('@')[0],
+        email: data.user.email,
+        avatar: data.user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+        isPremium: !!data.user.isPremium,
+        preferences: data.user.preferences || {
+          notificationsEnabled: true,
+          fontSize: 'md',
+          offlineReading: true,
+          hapticsEnabled: true,
+        },
+      },
+    };
+  }
+
+  async verifyReaderSession(token: string): Promise<User | null> {
+    try {
+      const url = `${getBaseUrl()}/auth/me`;
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (!data?.success || !data?.user) return null;
+      return {
+        id: data.user.id || data.user._id,
+        name: data.user.name,
+        username: data.user.username || data.user.email.split('@')[0],
+        email: data.user.email,
+        avatar: data.user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+        isPremium: !!data.user.isPremium,
+        preferences: data.user.preferences || {
+          notificationsEnabled: true,
+          fontSize: 'md',
+          offlineReading: true,
+          hapticsEnabled: true,
+        },
+      };
+    } catch {
+      return null;
+    }
+  }
 }
 
 export const apiService = new TechQuoApiService();

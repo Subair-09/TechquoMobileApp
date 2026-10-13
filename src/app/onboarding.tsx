@@ -64,7 +64,7 @@ export default function OnboardingScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<SlideData>>(null);
 
-  const handleFinishOnboarding = async (targetRoute: '/(tabs)' | '/auth/signin' = '/(tabs)') => {
+  const handleFinishOnboarding = async (targetRoute: '/auth/signin' | '/(tabs)' = '/auth/signin') => {
     await StorageService.setOnboardingCompleted(true);
     router.replace(targetRoute);
   };
@@ -75,12 +75,12 @@ export default function OnboardingScreen() {
       flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
       setCurrentIndex(nextIndex);
     } else {
-      handleFinishOnboarding();
+      handleFinishOnboarding('/auth/signin');
     }
   };
 
   const handleSkip = () => {
-    handleFinishOnboarding();
+    handleFinishOnboarding('/auth/signin');
   };
 
   const handleSignIn = () => {

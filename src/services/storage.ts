@@ -9,6 +9,7 @@ const KEYS = {
   RECENT_SEARCHES: '@techquo:recent_searches',
   LIKED_ARTICLES: '@techquo:liked_articles',
   USER_PROFILE: '@techquo:user_profile',
+  AUTH_TOKEN: '@techquo:auth_token',
 };
 
 export const StorageService = {
@@ -141,6 +142,34 @@ export const StorageService = {
       }
     } catch (e) {
       console.warn('Failed to save user profile', e);
+    }
+  },
+
+  async getAuthToken(): Promise<string | null> {
+    try {
+      return await AsyncStorage.getItem(KEYS.AUTH_TOKEN);
+    } catch {
+      return null;
+    }
+  },
+
+  async saveAuthToken(token: string | null): Promise<void> {
+    try {
+      if (!token) {
+        await AsyncStorage.removeItem(KEYS.AUTH_TOKEN);
+      } else {
+        await AsyncStorage.setItem(KEYS.AUTH_TOKEN, token);
+      }
+    } catch (e) {
+      console.warn('Failed to save auth token', e);
+    }
+  },
+
+  async clearAuthSession(): Promise<void> {
+    try {
+      await AsyncStorage.multiRemove([KEYS.AUTH_TOKEN, KEYS.USER_PROFILE]);
+    } catch (e) {
+      console.warn('Failed to clear auth session', e);
     }
   },
 };

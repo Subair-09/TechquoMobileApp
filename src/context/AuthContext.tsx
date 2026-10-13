@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
-import { CURRENT_USER } from '../data/mockData';
 import { StorageService } from '../services/storage';
+import { apiService } from '../services/api';
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   signIn: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   signUp: (name: string, email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
@@ -16,62 +17,113 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(CURRENT_USER);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    (async () => {
-      const savedUser = await StorageService.getUserProfile();
-      if (savedUser) {
-        setUser(savedUser);
-      } else {
-        // default to mock user if no explicit logout
-        setUser(CURRENT_USER);
-        await StorageService.saveUserProfile(CURRENT_USER);
+    let isMounted = true;
+
+    const restoreSession = async () => {
+      try {
+        const [savedUser, savedToken] = await Promise.all([
+          StorageService.getUserProfile(),
+          StorageService.getAuthToken(),
+        ]);
+
+        if (isMounted) {
+          if (savedUser && savedToken) {
+            setUser(savedUser);
+            // Verify and refresh session with live backend in background
+            apiService.verifyReaderSession(savedToken).then((verified) => {
+              if (verified && isMounted) {
+                setUser(verified);
+                StorageService.saveUserProfile(verified);
+              }
+            }).catch(() => {
+              // Ignore background verification network errors
+            });
+          } else {
+            setUser(null);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to restore auth session:', err);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
-    })();
+    };
+
+    restoreSession();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const signIn = async (email: string, _pass: string) => {
-    if (!email || !email.includes('@')) {
+  const signIn = async (email: string, pass: string) => {
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
       return { success: false, error: 'Please enter a valid email address.' };
     }
-    const loggedInUser: User = {
-      ...CURRENT_USER,
-      email,
-      name: email.split('@')[0],
-      username: email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, ''),
-    };
-    setUser(loggedInUser);
-    await StorageService.saveUserProfile(loggedInUser);
-    return { success: true };
+    if (!pass || pass.length < 6) {
+      return { success: false, error: 'Password must be at least 6 characters.' };
+    }
+
+    try {
+      const res = await apiService.loginReader({ email: cleanEmail, password: pass });
+      await Promise.all([
+        StorageService.saveAuthToken(res.token),
+        StorageService.saveUserProfile(res.user),
+      ]);
+      setUser(res.user);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Invalid email or password.' };
+    }
   };
 
-  const signUp = async (name: string, email: string, _pass: string) => {
-    if (!name.trim()) return { success: false, error: 'Name is required' };
-    if (!email || !email.includes('@')) return { success: false, error: 'Invalid email' };
+  const signUp = async (name: string, email: string, pass: string) => {
+    const cleanName = name.trim();
+    const cleanEmail = email.trim();
 
-    const newUser: User = {
-      id: `usr_${Date.now()}`,
-      name,
-      username: name.toLowerCase().replace(/\s+/g, '_'),
-      email,
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
-      isPremium: false,
-      preferences: {
-        notificationsEnabled: true,
-        fontSize: 'md',
-        offlineReading: true,
-        hapticsEnabled: true,
-      },
-    };
-    setUser(newUser);
-    await StorageService.saveUserProfile(newUser);
-    return { success: true };
+    if (!cleanName || cleanName.length < 2) {
+      return { success: false, error: 'Name must be at least 2 characters.' };
+    }
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      return { success: false, error: 'Please enter a valid email address.' };
+    }
+    if (!pass || pass.length < 6) {
+      return { success: false, error: 'Password must be at least 6 characters.' };
+    }
+
+    try {
+      const res = await apiService.registerReader({
+        name: cleanName,
+        email: cleanEmail,
+        password: pass,
+      });
+
+      await Promise.all([
+        StorageService.saveAuthToken(res.token),
+        StorageService.saveUserProfile(res.user),
+      ]);
+      setUser(res.user);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Registration failed. Please try again.' };
+    }
   };
 
   const signOut = async () => {
-    setUser(null);
-    await StorageService.saveUserProfile(null);
+    try {
+      await StorageService.clearAuthSession();
+    } catch (err) {
+      console.warn('Error clearing auth session:', err);
+    } finally {
+      setUser(null);
+    }
   };
 
   const updateUserPreferences = async (prefs: Partial<User['preferences']>) => {
@@ -99,6 +151,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         isAuthenticated: !!user,
+        isLoading,
         signIn,
         signUp,
         signOut,

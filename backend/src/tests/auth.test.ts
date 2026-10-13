@@ -42,6 +42,49 @@ describe('Authentication API', () => {
     expect(res.body.user.email).toBe('testadmin@techquo.news');
   });
 
+  it('should register a new reader user successfully', async () => {
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({
+        name: 'Jane Doe',
+        email: 'janedoe@example.com',
+        password: 'Password123!',
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+    expect(res.body.token).toBeDefined();
+    expect(res.body.user.email).toBe('janedoe@example.com');
+    expect(res.body.user.name).toBe('Jane Doe');
+  });
+
+  it('should reject registration with duplicate email', async () => {
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({
+        name: 'Jane Doe Duplicate',
+        email: 'janedoe@example.com',
+        password: 'Password123!',
+      });
+
+    expect(res.status).toBe(409);
+    expect(res.body.success).toBe(false);
+  });
+
+  it('should login reader with valid credentials', async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({
+        email: 'janedoe@example.com',
+        password: 'Password123!',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.token).toBeDefined();
+    expect(res.body.user.email).toBe('janedoe@example.com');
+  });
+
   it('should reject unauthenticated request on /api/auth/me', async () => {
     const res = await request(app).get('/api/auth/me');
     expect(res.status).toBe(401);

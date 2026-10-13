@@ -34,7 +34,7 @@ export default function SignInScreen() {
     try {
       const res = await signIn(email.trim(), password);
       if (res.success) {
-        router.back();
+        router.replace('/(tabs)');
       } else {
         setError(res.error || 'Authentication failed');
       }
@@ -42,6 +42,14 @@ export default function SignInScreen() {
       setError('Unexpected error occurred during sign in');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)');
     }
   };
 
@@ -53,7 +61,7 @@ export default function SignInScreen() {
       >
         <View style={styles.topNav}>
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={handleBack}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             style={styles.backBtn}
           >

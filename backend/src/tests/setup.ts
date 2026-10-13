@@ -27,7 +27,7 @@ export class InMemoryCollection {
       updatedAt: data.updatedAt || new Date(),
     };
 
-    if (this.modelName === 'AdminUser') {
+    if (this.modelName === 'AdminUser' || this.modelName === 'User') {
       doc.comparePassword = async (pass: string) => {
         return bcrypt.compare(pass, doc.passwordHash);
       };
@@ -227,6 +227,7 @@ export const articleViewStore = new InMemoryCollection('ArticleView');
 export const mediaAssetStore = new InMemoryCollection('MediaAsset');
 export const commentStore = new InMemoryCollection('Comment');
 export const settingStore = new InMemoryCollection('Setting');
+export const userStore = new InMemoryCollection('User');
 
 // Mock mongoose models in Vitest
 vi.mock('../models/AdminUser.js', () => ({ AdminUser: adminUserStore }));
@@ -238,6 +239,7 @@ vi.mock('../models/ArticleView.js', () => ({ ArticleView: articleViewStore }));
 vi.mock('../models/MediaAsset.js', () => ({ MediaAsset: mediaAssetStore }));
 vi.mock('../models/Comment.js', () => ({ Comment: commentStore }));
 vi.mock('../models/Setting.js', () => ({ Setting: settingStore }));
+vi.mock('../models/User.js', () => ({ User: userStore }));
 vi.mock('../middleware/auditLogger.js', () => ({ logAudit: vi.fn() }));
 
 beforeAll(async () => {

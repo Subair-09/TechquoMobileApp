@@ -35,7 +35,7 @@ export default function SignUpScreen() {
     try {
       const res = await signUp(name.trim(), email.trim(), password);
       if (res.success) {
-        router.back();
+        router.replace('/(tabs)');
       } else {
         setError(res.error || 'Failed to create account');
       }
@@ -43,6 +43,14 @@ export default function SignUpScreen() {
       setError('Unexpected error during registration');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/auth/signin');
     }
   };
 
@@ -54,7 +62,7 @@ export default function SignUpScreen() {
       >
         <View style={styles.topNav}>
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={handleBack}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             style={styles.backBtn}
           >
