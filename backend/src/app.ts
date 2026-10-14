@@ -19,6 +19,7 @@ import authorRoutes, { adminAuthorRouter } from './routes/authorRoutes.js';
 import mediaRoutes from './routes/mediaRoutes.js';
 import commentRoutes, { adminCommentRouter } from './routes/commentRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import readerRoutes from './routes/readerRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import settingRoutes from './routes/settingRoutes.js';
 
@@ -157,6 +158,7 @@ export const createApp = () => {
   apiRouter.use('/admin/media', mediaRoutes);
   apiRouter.use('/admin/comments', adminCommentRouter);
   apiRouter.use('/admin/users', userRoutes);
+  apiRouter.use('/admin/readers', readerRoutes);
   apiRouter.use('/admin/analytics', analyticsRoutes);
   apiRouter.use('/admin/settings', settingRoutes);
 

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import {
   AdminUser,
+  ReaderUser,
   Article,
   Author,
   Category,
@@ -216,6 +217,27 @@ export const userApi = {
   },
   deleteUser: async (id: string) => {
     const res = await apiClient.delete(`/admin/users/${id}`);
+    return res.data;
+  },
+};
+
+// ==================== READERS API ====================
+export const readerApi = {
+  getReaders: async (params?: { search?: string; status?: string; page?: number; limit?: number }): Promise<{
+    success: boolean;
+    data: ReaderUser[];
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+    stats: { totalReaders: number; activeReaders: number; premiumReaders: number };
+  }> => {
+    const res = await apiClient.get('/admin/readers', { params });
+    return res.data;
+  },
+  toggleReaderStatus: async (id: string) => {
+    const res = await apiClient.patch(`/admin/readers/${id}/toggle-status`);
+    return res.data;
+  },
+  deleteReader: async (id: string) => {
+    const res = await apiClient.delete(`/admin/readers/${id}`);
     return res.data;
   },
 };

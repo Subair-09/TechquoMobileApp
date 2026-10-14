@@ -38,8 +38,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { label: 'Authors', path: '/authors', icon: Users },
     { label: 'Media Library', path: '/media', icon: Image },
     { label: 'Comments', path: '/comments', icon: MessageSquare },
-    ...(hasRole(['super_admin'])
-      ? [{ label: 'Users & Roles', path: '/users', icon: ShieldCheck }]
+    ...(hasRole(['super_admin', 'editor'])
+      ? [{ label: 'Users & Readers', path: '/users', icon: ShieldCheck }]
       : []),
     { label: 'Analytics', path: '/analytics', icon: BarChart3 },
     { label: 'Settings', path: '/settings', icon: Settings },

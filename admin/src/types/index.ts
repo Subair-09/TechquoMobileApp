@@ -12,6 +12,20 @@ export interface AdminUser {
   createdAt?: string;
 }
 
+export interface ReaderUser {
+  id: string;
+  _id?: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  isPremium: boolean;
+  isActive: boolean;
+  bookmarksCount?: number;
+  lastLoginAt?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface Category {
   _id: string;
   name: string;
