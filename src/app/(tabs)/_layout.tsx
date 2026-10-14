@@ -1,12 +1,26 @@
 import React from 'react';
-import { Tabs } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { Tabs, Redirect } from 'expo-router';
+import { StyleSheet, View, ActivityIndicator } from 'react-native';
 import { Home, Compass, Bookmark, User } from 'lucide-react-native';
 import { COLORS, FONTS } from '../../constants/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '../../context/AuthContext';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.white }}>
+        <ActivityIndicator size="small" color={COLORS.black} />
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Redirect href="/auth/signin" />;
+  }
 
   return (
     <Tabs

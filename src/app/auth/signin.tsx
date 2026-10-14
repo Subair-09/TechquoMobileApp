@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { ChevronLeft } from 'lucide-react-native';
 import { COLORS, FONTS } from '../../constants/theme';
 import { BrandLogo } from '../../components/BrandLogo';
 import { useAuth } from '../../context/AuthContext';
@@ -22,7 +22,24 @@ export default function SignInScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { signIn } = useAuth();
+  const { signIn, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/(tabs)');
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    const onBackPress = () => {
+      // Prevent bypassing login via Android back button - exit app instead
+      BackHandler.exitApp();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => backHandler.remove();
+  }, []);
 
   const handleSignIn = async () => {
     setError(null);
@@ -45,29 +62,12 @@ export default function SignInScreen() {
     }
   };
 
-  const handleBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/(tabs)');
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.content}
       >
-        <View style={styles.topNav}>
-          <TouchableOpacity
-            onPress={handleBack}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            style={styles.backBtn}
-          >
-            <ChevronLeft size={24} color={COLORS.black} />
-          </TouchableOpacity>
-        </View>
 
         <View style={styles.brandContainer}>
           <BrandLogo size="lg" />

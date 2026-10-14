@@ -107,21 +107,22 @@ export default function RootLayout() {
                   name="auth/signin"
                   options={{
                     headerShown: false,
-                    presentation: 'modal',
+                    animation: 'fade',
+                    gestureEnabled: false,
                   }}
                 />
                 <Stack.Screen
                   name="auth/signup"
                   options={{
                     headerShown: false,
-                    presentation: 'modal',
+                    animation: 'slide_from_right',
                   }}
                 />
                 <Stack.Screen
                   name="auth/forgot-password"
                   options={{
                     headerShown: false,
-                    presentation: 'modal',
+                    animation: 'slide_from_right',
                   }}
                 />
               </Stack>

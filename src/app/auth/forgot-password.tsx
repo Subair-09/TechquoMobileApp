@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -18,6 +19,16 @@ import { BrandLogo } from '../../components/BrandLogo';
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    const onBackPress = () => {
+      router.replace('/auth/signin');
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => backHandler.remove();
+  }, []);
 
   const handleSubmit = () => {
     if (!email || !email.includes('@')) {
@@ -35,7 +46,7 @@ export default function ForgotPasswordScreen() {
       >
         <View style={styles.topNav}>
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => router.replace('/auth/signin')}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             style={styles.backBtn}
           >

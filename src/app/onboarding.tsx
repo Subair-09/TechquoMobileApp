@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   FlatList,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -63,6 +64,22 @@ const SLIDES: SlideData[] = [
 export default function OnboardingScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<SlideData>>(null);
+
+  useEffect(() => {
+    const onBackPress = () => {
+      if (currentIndex > 0) {
+        const prevIndex = currentIndex - 1;
+        flatListRef.current?.scrollToIndex({ index: prevIndex, animated: true });
+        setCurrentIndex(prevIndex);
+        return true;
+      }
+      BackHandler.exitApp();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => backHandler.remove();
+  }, [currentIndex]);
 
   const handleFinishOnboarding = async (targetRoute: '/auth/signin' | '/(tabs)' = '/auth/signin') => {
     await StorageService.setOnboardingCompleted(true);
