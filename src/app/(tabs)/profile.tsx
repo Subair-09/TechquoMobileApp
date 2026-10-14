@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,9 +6,12 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import {
   Home,
   Compass,
@@ -21,6 +24,7 @@ import {
   LogIn,
   ChevronRight,
   UserPlus,
+  Camera,
 } from 'lucide-react-native';
 import { COLORS, FONTS } from '../../constants/theme';
 import { BrandLogo } from '../../components/BrandLogo';
@@ -28,8 +32,46 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 
 export default function ProfileScreen() {
-  const { user, isAuthenticated, signOut } = useAuth();
+  const { user, isAuthenticated, signOut, updateAvatar } = useAuth();
   const { unreadCount } = useNotifications();
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  const handlePickAvatar = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert('Permission Needed', 'Please allow photo gallery access to change your profile picture.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const asset = result.assets[0];
+        setIsUploadingPhoto(true);
+
+        const base64Data = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        const res = await updateAvatar(base64Data);
+
+        if (!res.success) {
+          Alert.alert('Upload Failed', res.error || 'Could not update profile photo.');
+        } else {
+          Alert.alert('Success', 'Profile photo updated successfully!');
+        }
+      }
+    } catch (err: any) {
+      console.error('Error picking image:', err);
+      Alert.alert('Error', 'Failed to pick image from library.');
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -46,21 +88,40 @@ export default function ProfileScreen() {
 
         {/* User Profile Card */}
         {isAuthenticated && user ? (
-          <TouchableOpacity
-            style={styles.profileCard}
-            activeOpacity={0.8}
-            onPress={() => router.push('/settings')}
-          >
-            <Image
-              source={{ uri: user.avatar }}
-              style={styles.avatar}
-            />
-            <View style={styles.profileTextWrapper}>
+          <View style={styles.profileCard}>
+            <TouchableOpacity
+              style={styles.avatarWrapper}
+              onPress={handlePickAvatar}
+              disabled={isUploadingPhoto}
+              activeOpacity={0.8}
+            >
+              <Image
+                source={{ uri: user.avatar }}
+                style={styles.avatar}
+              />
+              <View style={styles.cameraBadge}>
+                {isUploadingPhoto ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" style={{ transform: [{ scale: 0.6 }] }} />
+                ) : (
+                  <Camera size={11} color="#FFFFFF" />
+                )}
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.profileTextWrapper}
+              activeOpacity={0.8}
+              onPress={() => router.push('/settings')}
+            >
               <Text style={styles.profileName}>{user.name}</Text>
-              <Text style={styles.profileHandle}>@{user.username}</Text>
-            </View>
-            <ChevronRight size={18} color="#8E95A2" />
-          </TouchableOpacity>
+              <Text style={styles.profileHandle}>@{user.username || user.email.split('@')[0]}</Text>
+              <Text style={styles.changePhotoText}>Tap photo to change</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => router.push('/settings')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <ChevronRight size={18} color="#8E95A2" />
+            </TouchableOpacity>
+          </View>
         ) : (
           <View style={styles.guestCard}>
             <Text style={styles.guestTitle}>Welcome to TechQuo News</Text>
@@ -243,6 +304,29 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.sansRegular,
     fontSize: 13,
     color: '#8E95A2',
+  },
+  avatarWrapper: {
+    position: 'relative',
+    marginRight: 14,
+  },
+  cameraBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: '#2563EB',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#0D0E12',
+  },
+  changePhotoText: {
+    fontFamily: FONTS.sansRegular,
+    fontSize: 11,
+    color: '#3B82F6',
+    marginTop: 2,
   },
   guestCard: {
     backgroundColor: '#17191E',

@@ -90,4 +90,26 @@ describe('Authentication API', () => {
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
   });
+
+  it('should allow authenticated reader to update their avatar', async () => {
+    const loginRes = await request(app)
+      .post('/api/auth/login')
+      .send({
+        email: 'janedoe@example.com',
+        password: 'Password123!',
+      });
+
+    const token = loginRes.body.token;
+
+    const res = await request(app)
+      .put('/api/auth/avatar')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.avatar).toBe('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200');
+  });
 });

@@ -645,6 +645,42 @@ class TechQuoApiService {
       return null;
     }
   }
+
+  async uploadReaderAvatar(token: string, avatarData: string): Promise<{ avatar: string; user: User }> {
+    const url = `${getBaseUrl()}/auth/avatar`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ avatar: avatarData }),
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok || !data?.success) {
+      throw new Error(data?.message || 'Failed to upload profile picture.');
+    }
+
+    return {
+      avatar: data.avatar,
+      user: {
+        id: data.user.id || data.user._id,
+        name: data.user.name,
+        username: data.user.username || data.user.email.split('@')[0],
+        email: data.user.email,
+        avatar: data.user.avatar,
+        isPremium: !!data.user.isPremium,
+        preferences: data.user.preferences || {
+          notificationsEnabled: true,
+          fontSize: 'md',
+          offlineReading: true,
+          hapticsEnabled: true,
+        },
+      },
+    };
+  }
 }
 
 export const apiService = new TechQuoApiService();

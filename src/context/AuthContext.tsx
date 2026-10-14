@@ -12,6 +12,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   updateUserPreferences: (prefs: Partial<User['preferences']>) => Promise<void>;
   upgradeToPremium: () => Promise<void>;
+  updateAvatar: (avatarData: string) => Promise<{ success: boolean; avatar?: string; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -146,6 +147,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await StorageService.saveUserProfile(updated);
   };
 
+  const updateAvatar = async (avatarData: string) => {
+    try {
+      const token = await StorageService.getAuthToken();
+      if (!token) return { success: false, error: 'Not authenticated' };
+
+      const res = await apiService.uploadReaderAvatar(token, avatarData);
+      setUser(res.user);
+      await StorageService.saveUserProfile(res.user);
+      return { success: true, avatar: res.avatar };
+    } catch (err: any) {
+      console.error('Failed to update avatar:', err);
+      return { success: false, error: err.message || 'Failed to upload photo' };
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -157,6 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signOut,
         updateUserPreferences,
         upgradeToPremium,
+        updateAvatar,
       }}
     >
       {children}

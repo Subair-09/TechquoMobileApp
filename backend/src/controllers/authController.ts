@@ -7,6 +7,7 @@ import { User } from '../models/User.js';
 import { ENV } from '../config/env.js';
 import { AuthenticatedRequest } from '../middleware/auth.js';
 import { logAudit } from '../middleware/auditLogger.js';
+import { uploadMediaBuffer } from '../services/cloudinaryService.js';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -239,4 +240,144 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     success: true,
     message: 'If an account exists with this email, password reset instructions have been dispatched.',
   });
+};
+
+export const updateAvatar = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    let secureUrl = '';
+
+    if (req.file) {
+      // 1. Uploaded via multipart file
+      const uploaded = await uploadMediaBuffer(req.file.buffer, 'techquo/avatars', req.file.originalname);
+      secureUrl = uploaded.secureUrl;
+    } else if (req.body.avatar) {
+      // 2. Uploaded as base64 data string or external URL
+      const avatarData = req.body.avatar as string;
+      if (avatarData.startsWith('data:image')) {
+        const matches = avatarData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (matches && matches[2]) {
+          const buffer = Buffer.from(matches[2], 'base64');
+          const uploaded = await uploadMediaBuffer(buffer, 'techquo/avatars', 'avatar.jpg');
+          secureUrl = uploaded.secureUrl;
+        }
+      } else if (avatarData.startsWith('http://') || avatarData.startsWith('https://')) {
+        secureUrl = avatarData;
+      }
+    }
+
+    if (!secureUrl) {
+      res.status(400).json({ success: false, message: 'No valid image provided' });
+      return;
+    }
+
+    // Update in User (reader) or AdminUser
+    const reader = await User.findById(req.user._id);
+    if (reader) {
+      reader.avatar = secureUrl;
+      await reader.save();
+      res.json({
+        success: true,
+        message: 'Avatar updated successfully',
+        avatar: secureUrl,
+        user: {
+          id: reader._id.toString(),
+          name: reader.name,
+          email: reader.email,
+          role: 'reader',
+          avatar: reader.avatar,
+          isPremium: reader.isPremium,
+          preferences: reader.preferences,
+        },
+      });
+      return;
+    }
+
+    const admin = await AdminUser.findById(req.user._id);
+    if (admin) {
+      admin.avatar = secureUrl;
+      await admin.save();
+      res.json({
+        success: true,
+        message: 'Avatar updated successfully',
+        avatar: secureUrl,
+        user: {
+          id: admin._id.toString(),
+          name: admin.name,
+          email: admin.email,
+          role: admin.role,
+          avatar: admin.avatar,
+        },
+      });
+      return;
+    }
+
+    res.status(404).json({ success: false, message: 'User not found' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: 'Failed to update avatar', error: err.message });
+  }
+};
+
+export const updateProfile = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    const { name, avatar, preferences } = req.body;
+
+    const reader = await User.findById(req.user._id);
+    if (reader) {
+      if (name && typeof name === 'string' && name.trim()) reader.name = name.trim();
+      if (avatar && typeof avatar === 'string') reader.avatar = avatar;
+      if (preferences && typeof preferences === 'object') {
+        reader.preferences = { ...reader.preferences, ...preferences };
+      }
+      await reader.save();
+
+      res.json({
+        success: true,
+        message: 'Profile updated successfully',
+        user: {
+          id: reader._id.toString(),
+          name: reader.name,
+          email: reader.email,
+          role: 'reader',
+          avatar: reader.avatar,
+          isPremium: reader.isPremium,
+          preferences: reader.preferences,
+        },
+      });
+      return;
+    }
+
+    const admin = await AdminUser.findById(req.user._id);
+    if (admin) {
+      if (name && typeof name === 'string' && name.trim()) admin.name = name.trim();
+      if (avatar && typeof avatar === 'string') admin.avatar = avatar;
+      await admin.save();
+
+      res.json({
+        success: true,
+        message: 'Profile updated successfully',
+        user: {
+          id: admin._id.toString(),
+          name: admin.name,
+          email: admin.email,
+          role: admin.role,
+          avatar: admin.avatar,
+        },
+      });
+      return;
+    }
+
+    res.status(404).json({ success: false, message: 'User not found' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: 'Failed to update profile', error: err.message });
+  }
 };

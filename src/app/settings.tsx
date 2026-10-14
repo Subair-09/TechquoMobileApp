@@ -7,9 +7,12 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import {
   ChevronLeft,
   ChevronRight,
@@ -19,6 +22,7 @@ import {
   Trash2,
   Smartphone,
   RotateCcw,
+  Camera,
 } from 'lucide-react-native';
 import { COLORS, FONTS } from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
@@ -27,9 +31,47 @@ import { FontSizeModal } from '../components/FontSizeModal';
 import { StorageService } from '../services/storage';
 
 export default function SettingsScreen() {
-  const { user, updateUserPreferences } = useAuth();
+  const { user, updateUserPreferences, updateAvatar } = useAuth();
   const { fontSize } = useReading();
   const [fontSizeModalVisible, setFontSizeModalVisible] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  const handlePickAvatar = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert('Permission Needed', 'Please allow photo gallery access to change your profile picture.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const asset = result.assets[0];
+        setIsUploadingPhoto(true);
+
+        const base64Data = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        const res = await updateAvatar(base64Data);
+
+        if (!res.success) {
+          Alert.alert('Upload Failed', res.error || 'Could not update profile photo.');
+        } else {
+          Alert.alert('Success', 'Profile photo updated successfully!');
+        }
+      }
+    } catch (err: any) {
+      console.error('Error picking image:', err);
+      Alert.alert('Error', 'Failed to pick image from library.');
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(
     user?.preferences.notificationsEnabled ?? true
@@ -104,6 +146,41 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
+        {/* Section: Account & Profile */}
+        {user && (
+          <View style={styles.profileSection}>
+            <TouchableOpacity
+              style={styles.avatarContainer}
+              onPress={handlePickAvatar}
+              disabled={isUploadingPhoto}
+              activeOpacity={0.8}
+            >
+              <Image source={{ uri: user.avatar }} style={styles.settingsAvatar} />
+              <View style={styles.cameraIconBadge}>
+                {isUploadingPhoto ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" style={{ transform: [{ scale: 0.6 }] }} />
+                ) : (
+                  <Camera size={13} color="#FFFFFF" />
+                )}
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.profileDetails}>
+              <Text style={styles.settingsProfileName}>{user.name}</Text>
+              <Text style={styles.settingsProfileEmail}>{user.email}</Text>
+              <TouchableOpacity
+                onPress={handlePickAvatar}
+                disabled={isUploadingPhoto}
+                style={styles.changePhotoBtn}
+              >
+                <Text style={styles.changePhotoBtnText}>
+                  {isUploadingPhoto ? 'Uploading Photo...' : 'Change Profile Photo'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         {/* Section: Reading Experience */}
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>READING EXPERIENCE</Text>
@@ -340,5 +417,59 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.sansRegular,
     fontSize: 12,
     color: COLORS.black,
+  },
+  profileSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginRight: 16,
+  },
+  settingsAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#E5E7EB',
+  },
+  cameraIconBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: COLORS.black,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.surface,
+  },
+  profileDetails: {
+    flex: 1,
+  },
+  settingsProfileName: {
+    fontFamily: FONTS.sansSemiBold,
+    fontSize: 15,
+    color: COLORS.black,
+    marginBottom: 2,
+  },
+  settingsProfileEmail: {
+    fontFamily: FONTS.sansRegular,
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginBottom: 6,
+  },
+  changePhotoBtn: {
+    alignSelf: 'flex-start',
+  },
+  changePhotoBtnText: {
+    fontFamily: FONTS.sansSemiBold,
+    fontSize: 12,
+    color: '#2563EB',
   },
 });
