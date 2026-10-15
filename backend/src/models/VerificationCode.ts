@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IVerificationCode extends Document {
   email: string;
   code: string;
-  type: 'email_verification' | 'password_reset';
+  type: 'email_verification' | 'login_verification' | 'password_reset';
   expiresAt: Date;
   used: boolean;
   createdAt: Date;
@@ -25,7 +25,7 @@ const VerificationCodeSchema = new Schema<IVerificationCode>(
     },
     type: {
       type: String,
-      enum: ['email_verification', 'password_reset'],
+      enum: ['email_verification', 'login_verification', 'password_reset'],
       default: 'email_verification',
     },
     expiresAt: {
