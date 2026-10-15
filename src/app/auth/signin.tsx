@@ -12,13 +12,16 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { Eye, EyeOff } from 'lucide-react-native';
 import { COLORS, FONTS } from '../../constants/theme';
 import { BrandLogo } from '../../components/BrandLogo';
+import { GoogleAuthButton } from '../../components/GoogleAuthButton';
 import { useAuth } from '../../context/AuthContext';
 
 export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,7 +54,18 @@ export default function SignInScreen() {
     try {
       const res = await signIn(email.trim(), password);
       if (res.success) {
-        router.replace('/(tabs)');
+        if (res.requiresOtp) {
+          router.push({
+            pathname: '/auth/verify-email',
+            params: {
+              email: (res.email || email).trim().toLowerCase(),
+              name: res.name || '',
+              mode: 'login',
+            },
+          });
+        } else {
+          router.replace('/(tabs)');
+        }
       } else {
         setError(res.error || 'Authentication failed');
       }
@@ -84,6 +98,18 @@ export default function SignInScreen() {
         )}
 
         <View style={styles.form}>
+          <GoogleAuthButton
+            label="Continue with Google"
+            onSuccess={() => router.replace('/(tabs)')}
+            onError={(err) => setError(err)}
+          />
+
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or continue with email</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
           <View style={styles.inputGroup}>
             <Text style={styles.label}>EMAIL ADDRESS</Text>
             <TextInput
@@ -104,14 +130,29 @@ export default function SignInScreen() {
                 <Text style={styles.forgotLink}>Forgot?</Text>
               </TouchableOpacity>
             </View>
-            <TextInput
-              value={password}
-              onChangeText={setPassword}
-              placeholder="••••••••••••"
-              placeholderTextColor={COLORS.textMuted}
-              secureTextEntry
-              style={styles.input}
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                placeholder="••••••••••••"
+                placeholderTextColor={COLORS.textMuted}
+                secureTextEntry={!showPassword}
+                style={styles.passwordInput}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword((prev) => !prev)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={styles.eyeBtn}
+                accessibilityRole="button"
+                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? (
+                  <EyeOff size={20} color={COLORS.textMuted} />
+                ) : (
+                  <Eye size={20} color={COLORS.textMuted} />
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
 
           <TouchableOpacity
@@ -219,6 +260,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.black,
   },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontFamily: FONTS.sansRegular,
+    fontSize: 14,
+    color: COLORS.black,
+  },
+  eyeBtn: {
+    padding: 6,
+    marginLeft: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   submitBtn: {
     backgroundColor: COLORS.black,
     paddingVertical: 15,
@@ -247,5 +308,23 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.sansSemiBold,
     fontSize: 13,
     color: COLORS.black,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    fontSize: 11,
+    fontFamily: FONTS.sansMedium,
+    color: COLORS.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
 });

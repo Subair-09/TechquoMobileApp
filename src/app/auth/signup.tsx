@@ -12,25 +12,27 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft, Eye, EyeOff } from 'lucide-react-native';
 import { COLORS, FONTS } from '../../constants/theme';
 import { BrandLogo } from '../../components/BrandLogo';
+import { GoogleAuthButton } from '../../components/GoogleAuthButton';
 import { useAuth } from '../../context/AuthContext';
 
 export default function SignUpScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { signUp, isAuthenticated } = useAuth();
+  const { signUp, isAuthenticated, user } = useAuth();
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && user?.isEmailVerified) {
       router.replace('/(tabs)');
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
   useEffect(() => {
     const onBackPress = () => {
@@ -44,15 +46,22 @@ export default function SignUpScreen() {
 
   const handleSignUp = async () => {
     setError(null);
-    if (!name.trim() || !email.trim() || !password.trim()) {
+    const cleanName = name.trim();
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!cleanName || !cleanEmail || !password.trim()) {
       setError('Please fill in all fields.');
       return;
     }
     setLoading(true);
     try {
-      const res = await signUp(name.trim(), email.trim(), password);
+      const res = await signUp(cleanName, cleanEmail, password);
       if (res.success) {
-        router.replace('/(tabs)');
+        // Navigate to email verification screen powered by Resend
+        router.push({
+          pathname: '/auth/verify-email',
+          params: { email: cleanEmail, name: cleanName, mode: 'signup' },
+        });
       } else {
         setError(res.error || 'Failed to create account');
       }
@@ -98,6 +107,18 @@ export default function SignUpScreen() {
         )}
 
         <View style={styles.form}>
+          <GoogleAuthButton
+            label="Continue with Google"
+            onSuccess={() => router.replace('/(tabs)')}
+            onError={(err) => setError(err)}
+          />
+
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or sign up with email</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
           <View style={styles.inputGroup}>
             <Text style={styles.label}>FULL NAME</Text>
             <TextInput
@@ -124,14 +145,29 @@ export default function SignUpScreen() {
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>PASSWORD</Text>
-            <TextInput
-              value={password}
-              onChangeText={setPassword}
-              placeholder="••••••••••••"
-              placeholderTextColor={COLORS.textMuted}
-              secureTextEntry
-              style={styles.input}
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                placeholder="••••••••••••"
+                placeholderTextColor={COLORS.textMuted}
+                secureTextEntry={!showPassword}
+                style={styles.passwordInput}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword((prev) => !prev)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={styles.eyeBtn}
+                accessibilityRole="button"
+                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? (
+                  <EyeOff size={20} color={COLORS.textMuted} />
+                ) : (
+                  <Eye size={20} color={COLORS.textMuted} />
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
 
           <TouchableOpacity
@@ -229,6 +265,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.black,
   },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontFamily: FONTS.sansRegular,
+    fontSize: 14,
+    color: COLORS.black,
+  },
+  eyeBtn: {
+    padding: 6,
+    marginLeft: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   submitBtn: {
     backgroundColor: COLORS.black,
     paddingVertical: 15,
@@ -257,5 +313,23 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.sansSemiBold,
     fontSize: 13,
     color: COLORS.black,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    fontSize: 11,
+    fontFamily: FONTS.sansMedium,
+    color: COLORS.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
 });

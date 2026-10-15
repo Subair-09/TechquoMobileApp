@@ -40,6 +40,8 @@ export interface User {
   email: string;
   avatar: string;
   isPremium: boolean;
+  isEmailVerified?: boolean;
+  authProvider?: 'local' | 'google';
   preferences: {
     notificationsEnabled: boolean;
     fontSize: 'sm' | 'md' | 'lg' | 'xl';

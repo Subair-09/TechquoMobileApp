@@ -11,12 +11,15 @@ export interface IUserPreferences {
 export interface IUser extends Document {
   name: string;
   email: string;
-  passwordHash: string;
+  passwordHash?: string;
   avatar: string;
   isPremium: boolean;
   preferences: IUserPreferences;
   bookmarks: string[];
   isActive: boolean;
+  isEmailVerified: boolean;
+  authProvider: 'local' | 'google';
+  googleId?: string;
   lastLoginAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -40,7 +43,7 @@ const UserSchema = new Schema<IUser>(
     },
     passwordHash: {
       type: String,
-      required: [true, 'Password hash is required'],
+      required: false,
     },
     avatar: {
       type: String,
@@ -61,6 +64,19 @@ const UserSchema = new Schema<IUser>(
       type: Boolean,
       default: true,
     },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    authProvider: {
+      type: String,
+      enum: ['local', 'google'],
+      default: 'local',
+    },
+    googleId: {
+      type: String,
+      sparse: true,
+    },
     lastLoginAt: {
       type: Date,
     },
@@ -71,6 +87,7 @@ const UserSchema = new Schema<IUser>(
 );
 
 UserSchema.methods.comparePassword = async function (candidate: string): Promise<boolean> {
+  if (!this.passwordHash) return false;
   return bcrypt.compare(candidate, this.passwordHash);
 };
 

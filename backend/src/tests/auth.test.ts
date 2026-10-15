@@ -71,7 +71,7 @@ describe('Authentication API', () => {
     expect(res.body.success).toBe(false);
   });
 
-  it('should login reader with valid credentials', async () => {
+  it('should login reader with valid credentials and require OTP', async () => {
     const res = await request(app)
       .post('/api/auth/login')
       .send({
@@ -81,8 +81,25 @@ describe('Authentication API', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.token).toBeDefined();
-    expect(res.body.user.email).toBe('janedoe@example.com');
+    expect(res.body.requiresOtp).toBe(true);
+    expect(res.body.email).toBe('janedoe@example.com');
+
+    // Verify OTP confirmation
+    const { verificationCodeStore } = await import('./setup.js');
+    const stored = verificationCodeStore.docs.find((d) => d.email === 'janedoe@example.com' && d.used === false);
+    expect(stored).toBeDefined();
+
+    const verifyRes = await request(app)
+      .post('/api/auth/verify-code')
+      .send({
+        email: 'janedoe@example.com',
+        code: stored.code,
+      });
+
+    expect(verifyRes.status).toBe(200);
+    expect(verifyRes.body.success).toBe(true);
+    expect(verifyRes.body.token).toBeDefined();
+    expect(verifyRes.body.user.email).toBe('janedoe@example.com');
   });
 
   it('should reject unauthenticated request on /api/auth/me', async () => {
@@ -92,14 +109,24 @@ describe('Authentication API', () => {
   });
 
   it('should allow authenticated reader to update their avatar', async () => {
-    const loginRes = await request(app)
+    await request(app)
       .post('/api/auth/login')
       .send({
         email: 'janedoe@example.com',
         password: 'Password123!',
       });
 
-    const token = loginRes.body.token;
+    const { verificationCodeStore } = await import('./setup.js');
+    const stored = verificationCodeStore.docs.find((d) => d.email === 'janedoe@example.com' && d.used === false);
+
+    const verifyRes = await request(app)
+      .post('/api/auth/verify-code')
+      .send({
+        email: 'janedoe@example.com',
+        code: stored.code,
+      });
+
+    const token = verifyRes.body.token;
 
     const res = await request(app)
       .put('/api/auth/avatar')
@@ -111,5 +138,61 @@ describe('Authentication API', () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.avatar).toBe('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200');
+  });
+
+  it('should authenticate with Google credentials', async () => {
+    const res = await request(app)
+      .post('/api/auth/google')
+      .send({
+        email: 'googleuser@example.com',
+        name: 'Google Reader',
+        avatar: 'https://lh3.googleusercontent.com/a/test-photo',
+        googleId: 'goog_123456789',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.token).toBeDefined();
+    expect(res.body.user.email).toBe('googleuser@example.com');
+    expect(res.body.user.name).toBe('Google Reader');
+  });
+
+  it('should send verification code for email verification', async () => {
+    const res = await request(app)
+      .post('/api/auth/send-verification-code')
+      .send({
+        email: 'verifytest@example.com',
+        name: 'Verify Test',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.message).toContain('sent');
+  });
+
+  it('should verify 6-digit code and activate reader email', async () => {
+    // 1. Send code
+    await request(app)
+      .post('/api/auth/send-verification-code')
+      .send({
+        email: 'verifytest@example.com',
+        name: 'Verify Test',
+      });
+
+    // 2. Fetch code from mock store
+    const { verificationCodeStore } = await import('./setup.js');
+    const stored = verificationCodeStore.docs.find((d) => d.email === 'verifytest@example.com');
+    expect(stored).toBeDefined();
+
+    // 3. Verify code
+    const res = await request(app)
+      .post('/api/auth/verify-code')
+      .send({
+        email: 'verifytest@example.com',
+        code: stored.code,
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
   });
 });

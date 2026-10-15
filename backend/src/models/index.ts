@@ -8,3 +8,4 @@ export * from './MediaAsset.js';
 export * from './AuditLog.js';
 export * from './Setting.js';
 export * from './User.js';
+export * from './VerificationCode.js';

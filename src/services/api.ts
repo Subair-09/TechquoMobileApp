@@ -571,6 +571,8 @@ class TechQuoApiService {
         email: data.user.email,
         avatar: data.user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
         isPremium: !!data.user.isPremium,
+        isEmailVerified: !!data.user.isEmailVerified,
+        authProvider: data.user.authProvider || 'local',
         preferences: data.user.preferences || {
           notificationsEnabled: true,
           fontSize: 'md',
@@ -581,7 +583,10 @@ class TechQuoApiService {
     };
   }
 
-  async loginReader(payload: { email: string; password: string }): Promise<{ token: string; user: User }> {
+  async loginReader(payload: { email: string; password: string }): Promise<
+    | { requiresOtp: true; email: string; name?: string; message?: string }
+    | { requiresOtp?: false; token: string; user: User }
+  > {
     const url = `${getBaseUrl()}/auth/login`;
     const res = await fetch(url, {
       method: 'POST',
@@ -597,6 +602,59 @@ class TechQuoApiService {
       throw new Error(data?.message || 'Invalid email or password.');
     }
 
+    if (data.requiresOtp) {
+      return {
+        requiresOtp: true,
+        email: data.email || payload.email,
+        name: data.name,
+        message: data.message,
+      };
+    }
+
+    return {
+      requiresOtp: false,
+      token: data.token,
+      user: {
+        id: data.user.id || data.user._id,
+        name: data.user.name,
+        username: data.user.username || data.user.email.split('@')[0],
+        email: data.user.email,
+        avatar: data.user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+        isPremium: !!data.user.isPremium,
+        isEmailVerified: !!data.user.isEmailVerified,
+        authProvider: data.user.authProvider || 'local',
+        preferences: data.user.preferences || {
+          notificationsEnabled: true,
+          fontSize: 'md',
+          offlineReading: true,
+          hapticsEnabled: true,
+        },
+      },
+    };
+  }
+
+  async loginWithGoogle(payload: {
+    email: string;
+    name: string;
+    avatar?: string;
+    googleId?: string;
+    idToken?: string;
+  }): Promise<{ token: string; user: User }> {
+    const url = `${getBaseUrl()}/auth/google`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok || !data?.success) {
+      throw new Error(data?.message || 'Google authentication failed.');
+    }
+
     return {
       token: data.token,
       user: {
@@ -606,6 +664,71 @@ class TechQuoApiService {
         email: data.user.email,
         avatar: data.user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
         isPremium: !!data.user.isPremium,
+        isEmailVerified: true,
+        authProvider: 'google',
+        preferences: data.user.preferences || {
+          notificationsEnabled: true,
+          fontSize: 'md',
+          offlineReading: true,
+          hapticsEnabled: true,
+        },
+      },
+    };
+  }
+
+  async sendVerificationCode(
+    email: string,
+    name?: string,
+    type: 'signup' | 'login' = 'signup'
+  ): Promise<{ success: boolean; message: string }> {
+    const url = `${getBaseUrl()}/auth/send-verification-code`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, name, type }),
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok || !data?.success) {
+      throw new Error(data?.message || 'Failed to send verification code.');
+    }
+
+    return {
+      success: true,
+      message: data.message || 'Verification code sent.',
+    };
+  }
+
+  async verifyEmailCode(email: string, code: string): Promise<{ token: string; user: User }> {
+    const url = `${getBaseUrl()}/auth/verify-code`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, code }),
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok || !data?.success) {
+      throw new Error(data?.message || 'Invalid or expired verification code.');
+    }
+
+    return {
+      token: data.token,
+      user: {
+        id: data.user.id || data.user._id,
+        name: data.user.name,
+        username: data.user.username || data.user.email.split('@')[0],
+        email: data.user.email,
+        avatar: data.user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+        isPremium: !!data.user.isPremium,
+        isEmailVerified: true,
+        authProvider: data.user.authProvider || 'local',
         preferences: data.user.preferences || {
           notificationsEnabled: true,
           fontSize: 'md',
@@ -634,6 +757,8 @@ class TechQuoApiService {
         email: data.user.email,
         avatar: data.user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
         isPremium: !!data.user.isPremium,
+        isEmailVerified: !!data.user.isEmailVerified,
+        authProvider: data.user.authProvider || 'local',
         preferences: data.user.preferences || {
           notificationsEnabled: true,
           fontSize: 'md',

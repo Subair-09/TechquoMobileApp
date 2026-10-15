@@ -125,6 +125,13 @@ export default function RootLayout() {
                     animation: 'slide_from_right',
                   }}
                 />
+                <Stack.Screen
+                  name="auth/verify-email"
+                  options={{
+                    headerShown: false,
+                    animation: 'slide_from_right',
+                  }}
+                />
               </Stack>
             </NotificationProvider>
           </ReadingProvider>

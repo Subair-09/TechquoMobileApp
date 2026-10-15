@@ -79,6 +79,24 @@ export class InMemoryCollection {
         if (Array.isArray(arr) && !arr.includes(doc[key])) return false;
         continue;
       }
+      if (typeof val === 'object' && val !== null) {
+        if ('$gt' in val) {
+          if (!(doc[key] > (val as any).$gt)) return false;
+          continue;
+        }
+        if ('$gte' in val) {
+          if (!(doc[key] >= (val as any).$gte)) return false;
+          continue;
+        }
+        if ('$lt' in val) {
+          if (!(doc[key] < (val as any).$lt)) return false;
+          continue;
+        }
+        if ('$lte' in val) {
+          if (!(doc[key] <= (val as any).$lte)) return false;
+          continue;
+        }
+      }
       if (val instanceof RegExp) {
         if (!val.test(doc[key] || '')) return false;
         continue;
@@ -228,6 +246,7 @@ export const mediaAssetStore = new InMemoryCollection('MediaAsset');
 export const commentStore = new InMemoryCollection('Comment');
 export const settingStore = new InMemoryCollection('Setting');
 export const userStore = new InMemoryCollection('User');
+export const verificationCodeStore = new InMemoryCollection('VerificationCode');
 
 // Mock mongoose models in Vitest
 vi.mock('../models/AdminUser.js', () => ({ AdminUser: adminUserStore }));
@@ -240,6 +259,7 @@ vi.mock('../models/MediaAsset.js', () => ({ MediaAsset: mediaAssetStore }));
 vi.mock('../models/Comment.js', () => ({ Comment: commentStore }));
 vi.mock('../models/Setting.js', () => ({ Setting: settingStore }));
 vi.mock('../models/User.js', () => ({ User: userStore }));
+vi.mock('../models/VerificationCode.js', () => ({ VerificationCode: verificationCodeStore }));
 vi.mock('../middleware/auditLogger.js', () => ({ logAudit: vi.fn() }));
 
 beforeAll(async () => {
@@ -276,4 +296,5 @@ beforeEach(async () => {
   mediaAssetStore.clear();
   commentStore.clear();
   settingStore.clear();
+  verificationCodeStore.clear();
 });

@@ -43,4 +43,6 @@ export const ENV = {
     EMAIL: process.env.INITIAL_ADMIN_EMAIL || 'admin@techquo.news',
     PASSWORD: process.env.INITIAL_ADMIN_PASSWORD || 'AdminPass123!',
   },
+  RESEND_API_KEY: process.env.RESEND_API_KEY || '',
+  RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL || 'MediCare Hospital <noreply@medicare.name.ng>',
 };

@@ -7,8 +7,17 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  signIn: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
-  signUp: (name: string, email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
+  signIn: (email: string, pass: string) => Promise<{ success: boolean; requiresOtp?: boolean; email?: string; name?: string; error?: string }>;
+  signUp: (name: string, email: string, pass: string) => Promise<{ success: boolean; requiresOtp?: boolean; email?: string; name?: string; error?: string }>;
+  signInWithGoogle: (payload: {
+    email: string;
+    name: string;
+    avatar?: string;
+    googleId?: string;
+    idToken?: string;
+  }) => Promise<{ success: boolean; error?: string }>;
+  sendVerificationCode: (email: string, name?: string, type?: 'signup' | 'login') => Promise<{ success: boolean; message?: string; error?: string }>;
+  verifyEmailCode: (email: string, code: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   updateUserPreferences: (prefs: Partial<User['preferences']>) => Promise<void>;
   upgradeToPremium: () => Promise<void>;
@@ -74,12 +83,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const res = await apiService.loginReader({ email: cleanEmail, password: pass });
+      if (res.requiresOtp) {
+        return {
+          success: true,
+          requiresOtp: true,
+          email: res.email,
+          name: res.name,
+        };
+      }
+
       await Promise.all([
         StorageService.saveAuthToken(res.token),
         StorageService.saveUserProfile(res.user),
       ]);
       setUser(res.user);
-      return { success: true };
+      return { success: true, requiresOtp: false };
     } catch (err: any) {
       return { success: false, error: err.message || 'Invalid email or password.' };
     }
@@ -100,12 +118,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      const res = await apiService.registerReader({
+      await apiService.registerReader({
         name: cleanName,
         email: cleanEmail,
         password: pass,
       });
 
+      return {
+        success: true,
+        requiresOtp: true,
+        email: cleanEmail,
+        name: cleanName,
+      };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Registration failed. Please try again.' };
+    }
+  };
+
+  const signInWithGoogle = async (payload: {
+    email: string;
+    name: string;
+    avatar?: string;
+    googleId?: string;
+    idToken?: string;
+  }) => {
+    try {
+      const res = await apiService.loginWithGoogle(payload);
       await Promise.all([
         StorageService.saveAuthToken(res.token),
         StorageService.saveUserProfile(res.user),
@@ -113,7 +151,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(res.user);
       return { success: true };
     } catch (err: any) {
-      return { success: false, error: err.message || 'Registration failed. Please try again.' };
+      return { success: false, error: err.message || 'Google sign-in failed. Please try again.' };
+    }
+  };
+
+  const sendVerificationCode = async (
+    email: string,
+    name?: string,
+    type: 'signup' | 'login' = 'signup'
+  ) => {
+    try {
+      const res = await apiService.sendVerificationCode(email, name, type);
+      return { success: true, message: res.message };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Failed to send verification code.' };
+    }
+  };
+
+  const verifyEmailCode = async (email: string, code: string) => {
+    try {
+      const res = await apiService.verifyEmailCode(email, code);
+      await Promise.all([
+        StorageService.saveAuthToken(res.token),
+        StorageService.saveUserProfile(res.user),
+      ]);
+      setUser(res.user);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Invalid or expired verification code.' };
     }
   };
 
@@ -170,6 +235,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         signIn,
         signUp,
+        signInWithGoogle,
+        sendVerificationCode,
+        verifyEmailCode,
         signOut,
         updateUserPreferences,
         upgradeToPremium,
