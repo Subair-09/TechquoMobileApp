@@ -70,9 +70,11 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       used: false,
     });
 
-    sendVerificationEmail(normalizedEmail, verificationCode, name.trim(), 'signup').catch((err) => {
+    try {
+      await sendVerificationEmail(normalizedEmail, verificationCode, name.trim(), 'signup');
+    } catch (err: any) {
       console.warn('[Resend] Warning sending verification code during register:', err.message);
-    });
+    }
 
     const token = jwt.sign(
       { id: user._id, email: user.email, role: 'reader' },
@@ -174,24 +176,38 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         return;
       }
 
-      // Generate 6-digit login confirmation OTP and send via Resend
-      const loginCode = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-      // Invalidate existing unused codes for this email
-      await VerificationCode.deleteMany({ email: normalizedEmail });
-
-      await VerificationCode.create({
+      // Reuse existing active, unexpired code if available within the 10-minute window,
+      // so repeated requests or slight delays never invalidate the code in the user's inbox!
+      let existingRecord = await VerificationCode.findOne({
         email: normalizedEmail,
-        code: loginCode,
-        type: 'login_verification',
-        expiresAt,
         used: false,
+        expiresAt: { $gt: new Date() },
       });
 
-      sendVerificationEmail(normalizedEmail, loginCode, readerUser.name, 'login').catch((err) => {
+      let loginCode: string;
+      if (existingRecord) {
+        loginCode = existingRecord.code;
+        existingRecord.expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        await existingRecord.save();
+      } else {
+        loginCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+        await VerificationCode.create({
+          email: normalizedEmail,
+          code: loginCode,
+          type: 'login_verification',
+          expiresAt,
+          used: false,
+        });
+      }
+
+      // Await email delivery so Vercel does not freeze execution before the email is sent!
+      try {
+        await sendVerificationEmail(normalizedEmail, loginCode, readerUser.name, 'login');
+      } catch (err: any) {
         console.warn('[Resend] Warning sending login verification code:', err.message);
-      });
+      }
 
       res.json({
         success: true,
@@ -546,23 +562,32 @@ export const sendVerificationCode = async (req: Request, res: Response): Promise
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Invalidate existing unused codes for this email
-    await VerificationCode.deleteMany({ email: normalizedEmail });
+    // Check if an active, unexpired code already exists so resending sends the exact same code
+    let existingRecord = await VerificationCode.findOne({
+      email: normalizedEmail,
+      used: false,
+      expiresAt: { $gt: new Date() },
+    });
 
-    // Generate 6-digit random code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // 10 minutes expiry
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    let code: string;
     const codeType = type === 'login' ? 'login_verification' : 'email_verification';
 
-    await VerificationCode.create({
-      email: normalizedEmail,
-      code,
-      type: codeType,
-      expiresAt,
-      used: false,
-    });
+    if (existingRecord) {
+      code = existingRecord.code;
+      existingRecord.expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      await existingRecord.save();
+    } else {
+      code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+      await VerificationCode.create({
+        email: normalizedEmail,
+        code,
+        type: codeType,
+        expiresAt,
+        used: false,
+      });
+    }
 
     await sendVerificationEmail(normalizedEmail, code, name, type === 'login' ? 'login' : 'signup');
 
@@ -600,6 +625,9 @@ export const verifyCode = async (req: Request, res: Response): Promise<void> => 
 
     record.used = true;
     await record.save();
+
+    // Clean up any remaining codes for this email now that they successfully verified
+    await VerificationCode.deleteMany({ email: normalizedEmail, _id: { $ne: record._id } });
 
     const user = await User.findOne({ email: normalizedEmail });
     if (user) {
