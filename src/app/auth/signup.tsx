@@ -36,7 +36,7 @@ export default function SignUpScreen() {
 
   useEffect(() => {
     const onBackPress = () => {
-      router.replace('/auth/signin');
+      router.replace('/onboarding');
       return true;
     };
 
@@ -73,7 +73,7 @@ export default function SignUpScreen() {
   };
 
   const handleBack = () => {
-    router.replace('/auth/signin');
+    router.replace('/onboarding');
   };
 
   return (

@@ -81,7 +81,7 @@ export default function OnboardingScreen() {
     return () => backHandler.remove();
   }, [currentIndex]);
 
-  const handleFinishOnboarding = async (targetRoute: '/auth/signin' | '/(tabs)' = '/auth/signin') => {
+  const handleFinishOnboarding = async (targetRoute: '/auth/signin' | '/auth/signup' | '/(tabs)' = '/auth/signin') => {
     await StorageService.setOnboardingCompleted(true);
     router.replace(targetRoute);
   };
@@ -92,7 +92,7 @@ export default function OnboardingScreen() {
       flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
       setCurrentIndex(nextIndex);
     } else {
-      handleFinishOnboarding('/auth/signin');
+      handleFinishOnboarding('/auth/signup');
     }
   };
 

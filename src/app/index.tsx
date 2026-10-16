@@ -15,18 +15,15 @@ export default function SplashScreen() {
       await new Promise((resolve) => setTimeout(resolve, 1800));
       if (!isMounted) return;
 
-      const [onboardingCompleted, savedUser, savedToken] = await Promise.all([
-        StorageService.isOnboardingCompleted(),
+      const [savedUser, savedToken] = await Promise.all([
         StorageService.getUserProfile(),
         StorageService.getAuthToken(),
       ]);
 
-      if (!onboardingCompleted) {
-        router.replace('/onboarding');
-      } else if (savedUser && savedToken && savedUser.isEmailVerified) {
+      if (savedUser && savedToken && savedUser.isEmailVerified) {
         router.replace('/(tabs)');
       } else {
-        router.replace('/auth/signin');
+        router.replace('/onboarding');
       }
     };
 

@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Eye, EyeOff } from 'lucide-react-native';
+import { Eye, EyeOff, ChevronLeft } from 'lucide-react-native';
 import { COLORS, FONTS } from '../../constants/theme';
 import { BrandLogo } from '../../components/BrandLogo';
 import { GoogleAuthButton } from '../../components/GoogleAuthButton';
@@ -35,8 +35,7 @@ export default function SignInScreen() {
 
   useEffect(() => {
     const onBackPress = () => {
-      // Prevent bypassing login via Android back button - exit app instead
-      BackHandler.exitApp();
+      router.replace('/onboarding');
       return true;
     };
 
@@ -82,6 +81,17 @@ export default function SignInScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.content}
       >
+        <View style={styles.topNav}>
+          <TouchableOpacity
+            onPress={() => router.replace('/onboarding')}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={styles.backBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Back to onboarding"
+          >
+            <ChevronLeft size={24} color={COLORS.black} />
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.brandContainer}>
           <BrandLogo size="lg" />
