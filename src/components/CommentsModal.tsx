@@ -8,10 +8,10 @@ import {
   Pressable,
   TextInput,
   FlatList,
-  Image,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { COLORS, FONTS } from '../constants/theme';
 import { Comment } from '../types';
 import { apiService } from '../services/api';
@@ -95,7 +95,13 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({
               contentContainerStyle={styles.listContent}
               renderItem={({ item }) => (
                 <View style={styles.commentItem}>
-                  <Image source={{ uri: item.userAvatar }} style={styles.avatar} />
+                  <Image
+                    source={{ uri: item.userAvatar }}
+                    style={styles.avatar}
+                    contentFit="cover"
+                    transition={200}
+                    cachePolicy="memory-disk"
+                  />
                   <View style={styles.commentBody}>
                     <View style={styles.nameRow}>
                       <Text style={styles.userName}>{item.userName}</Text>

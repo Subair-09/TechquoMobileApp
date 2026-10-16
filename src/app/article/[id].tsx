@@ -5,9 +5,9 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
   Share,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import {
@@ -186,7 +186,6 @@ export default function ArticleDetailScreen() {
         {/* Cover Hero Image */}
         <View style={styles.imageContainer}>
           <Image
-            key={article.coverImage}
             source={{
               uri: imageError
                 ? (article.coverImage && article.coverImage.includes('cloudinary.com')
@@ -196,7 +195,10 @@ export default function ArticleDetailScreen() {
             }}
             onError={() => setImageError(true)}
             style={styles.coverImage}
-            resizeMode="cover"
+            contentFit="cover"
+            transition={300}
+            cachePolicy="memory-disk"
+            priority="high"
           />
         </View>
 

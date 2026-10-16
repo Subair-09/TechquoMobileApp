@@ -15,6 +15,7 @@
     },
     "android": {
       "package": "com.techquo.news",
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -38,7 +39,8 @@
         {
           "photosPermission": "Allow TechQuo News to access your photos to set your profile picture."
         }
-      ]
+      ],
+      "expo-image"
     ],
     "extra": {
       "router": {},

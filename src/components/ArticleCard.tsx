@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
 import { Article } from '../types';
 import { COLORS, FONTS } from '../constants/theme';
 import { router } from 'expo-router';
@@ -42,11 +43,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
       <View style={styles.contentRow}>
         <View style={styles.thumbnailWrapper}>
           <Image
-            key={article.coverImage}
             source={{ uri: imageUri }}
             onError={() => setImageError(true)}
             style={styles.thumbnail}
-            resizeMode="cover"
+            contentFit="cover"
+            transition={200}
+            cachePolicy="memory-disk"
           />
         </View>
 

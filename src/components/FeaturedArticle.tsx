@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
 import { Article } from '../types';
 import { COLORS, FONTS } from '../constants/theme';
 import { router } from 'expo-router';
@@ -29,11 +30,13 @@ export const FeaturedArticle: React.FC<FeaturedArticleProps> = ({ article }) => 
     <TouchableOpacity activeOpacity={0.92} onPress={handlePress} style={styles.container}>
       <View style={styles.imageWrapper}>
         <Image
-          key={article.coverImage}
           source={{ uri: imageUri }}
           onError={() => setImageError(true)}
           style={styles.image}
-          resizeMode="cover"
+          contentFit="cover"
+          transition={250}
+          cachePolicy="memory-disk"
+          priority="high"
         />
         <View style={styles.imageOverlay}>
           <Text style={styles.overlayCategory}>{article.category.toUpperCase()}</Text>

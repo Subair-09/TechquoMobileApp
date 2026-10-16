@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
-  Image,
   ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -155,7 +155,13 @@ export default function SettingsScreen() {
               disabled={isUploadingPhoto}
               activeOpacity={0.8}
             >
-              <Image source={{ uri: user.avatar }} style={styles.settingsAvatar} />
+              <Image
+                source={{ uri: user.avatar }}
+                style={styles.settingsAvatar}
+                contentFit="cover"
+                transition={200}
+                cachePolicy="memory-disk"
+              />
               <View style={styles.cameraIconBadge}>
                 {isUploadingPhoto ? (
                   <ActivityIndicator size="small" color="#FFFFFF" style={{ transform: [{ scale: 0.6 }] }} />

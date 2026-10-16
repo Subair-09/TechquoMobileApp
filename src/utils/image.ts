@@ -15,6 +15,11 @@ export const optimizeImageUrl = (url?: string, width = 400): string => {
       .replace('127.0.0.1', '192.168.100.5');
   }
 
+  // Ensure secure HTTPS transport for all remote image URLs on Android
+  if (targetUrl.startsWith('http://') && !targetUrl.includes('192.168.') && !targetUrl.includes('10.0.')) {
+    targetUrl = targetUrl.replace('http://', 'https://');
+  }
+
   // For Cloudinary URLs: Cloudinary global CDN delivers instant cached assets.
   // Returning the direct secure URL ensures 100% reliable rendering on both Android and iOS
   if (targetUrl.includes('cloudinary.com')) {

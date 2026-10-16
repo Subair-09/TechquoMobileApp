@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { Author } from '../types';
 import { COLORS, FONTS } from '../constants/theme';
 
@@ -23,6 +24,9 @@ export const AuthorRow: React.FC<AuthorRowProps> = ({ author, publishedAt }) => 
           }}
           onError={() => setImageError(true)}
           style={styles.avatar}
+          contentFit="cover"
+          transition={200}
+          cachePolicy="memory-disk"
         />
       </View>
       <View style={styles.textWrapper}>
