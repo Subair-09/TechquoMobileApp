@@ -39,13 +39,21 @@ export default function VerifyEmailScreen() {
 
   const inputRef = useRef<TextInput>(null);
 
+  // Guard: if accessed directly or without an email param, redirect immediately to signin
+  useEffect(() => {
+    if (!email) {
+      router.replace('/auth/signin');
+    }
+  }, [email]);
+
   // Focus input automatically on mount
   useEffect(() => {
+    if (!email) return;
     const timer = setTimeout(() => {
       inputRef.current?.focus();
     }, 300);
     return () => clearTimeout(timer);
-  }, []);
+  }, [email]);
 
   // Handle hardware back press
   useEffect(() => {
@@ -155,6 +163,10 @@ export default function VerifyEmailScreen() {
   const handleBack = () => {
     router.replace(isLoginMode ? '/auth/signin' : '/auth/signup');
   };
+
+  if (!email) {
+    return null;
+  }
 
   return (
     <SafeAreaView style={styles.container}>

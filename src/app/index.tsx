@@ -23,15 +23,8 @@ export default function SplashScreen() {
 
       if (!onboardingCompleted) {
         router.replace('/onboarding');
-      } else if (savedUser && savedToken) {
-        if (savedUser.isEmailVerified === false && savedUser.authProvider !== 'google') {
-          router.replace({
-            pathname: '/auth/verify-email',
-            params: { email: savedUser.email, name: savedUser.name },
-          });
-        } else {
-          router.replace('/(tabs)');
-        }
+      } else if (savedUser && savedToken && savedUser.isEmailVerified) {
+        router.replace('/(tabs)');
       } else {
         router.replace('/auth/signin');
       }

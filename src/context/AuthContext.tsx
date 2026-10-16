@@ -41,13 +41,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ]);
 
         if (isMounted) {
-          if (savedUser && savedToken) {
+          if (savedUser && savedToken && savedUser.isEmailVerified) {
             setUser(savedUser);
             // Verify and refresh session with live backend in background
             apiService.verifyReaderSession(savedToken).then((verified) => {
               if (verified && isMounted) {
-                setUser(verified);
-                StorageService.saveUserProfile(verified);
+                if (verified.isEmailVerified) {
+                  setUser(verified);
+                  StorageService.saveUserProfile(verified);
+                } else {
+                  setUser(null);
+                  StorageService.clearAuthSession();
+                }
               }
             }).catch(() => {
               // Ignore background verification network errors
@@ -231,7 +236,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user,
+        isAuthenticated: !!user && user.isEmailVerified !== false,
         isLoading,
         signIn,
         signUp,
