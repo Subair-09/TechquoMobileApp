@@ -20,6 +20,15 @@
         "EXPO_PUBLIC_API_URL": "https://techquo-mobile-app.vercel.app/api"
       }
     },
+    "preview-simulator": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://techquo-mobile-app.vercel.app/api"
+      }
+    },
     "production": {
       "autoIncrement": true,
       "android": {
